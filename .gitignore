@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+build/
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# claude local overrides (personal, not shared)
+.claude/settings.local.json
+
+# misc
+.DS_Store
+*.log
