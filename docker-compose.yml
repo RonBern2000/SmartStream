@@ -1,0 +1,113 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smartstream
+      POSTGRES_PASSWORD: smartstream
+      POSTGRES_DB: smartstream
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartstream"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-svc:
+    build:
+      context: .
+      dockerfile: docker/auth.Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      DATABASE_URL: postgres://smartstream:smartstream@postgres:5432/smartstream
+    volumes:
+      - ./services/auth/src:/app/services/auth/src
+      - ./shared/src:/app/shared/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  card-svc:
+    build:
+      context: .
+      dockerfile: docker/card.Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+      REDIS_URL: redis://redis:6379
+      POKETCG_API_KEY: ${POKETCG_API_KEY}
+    volumes:
+      - ./services/card/src:/app/services/card/src
+      - ./shared/src:/app/shared/src
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  session-svc:
+    build:
+      context: .
+      dockerfile: docker/session.Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      NODE_ENV: development
+      DATABASE_URL: postgres://smartstream:smartstream@postgres:5432/smartstream
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./services/session/src:/app/services/session/src
+      - ./shared/src:/app/shared/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ws-svc:
+    build:
+      context: .
+      dockerfile: docker/ws.Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      NODE_ENV: development
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./services/ws/src:/app/services/ws/src
+      - ./shared/src:/app/shared/src
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      dockerfile: docker/client.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./client/src:/app/client/src
+      - ./shared/src:/app/shared/src
+
+volumes:
+  postgres_data:
