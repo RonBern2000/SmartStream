@@ -8,6 +8,20 @@ Two URLs, one React app — view selected by `?mode=` query param:
 
 ---
 
+## Git branching strategy
+
+| Branch | Purpose |
+|---|---|
+| `main` | Stable, production-only. Never commit directly. |
+| `dev` | Active development. All feature work lands here. |
+| `Rel_x.x.x` | Cut from `dev` when ready to publish. Merged into `main` on release. |
+
+Flow: `dev` → (when ready) → `Rel_x.x.x` → PR → `main`
+
+All day-to-day work happens on `dev`. Current branch: `dev`.
+
+---
+
 ## Architecture — Microservices
 
 Four backend services + one frontend, all TypeScript. Shared types in `shared/`.
